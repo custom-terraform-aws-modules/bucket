@@ -12,10 +12,7 @@ resource "aws_s3_bucket" "main" {
   bucket        = "${var.identifier}-${random_string.suffix.result}"
   force_destroy = var.force_destroy
 
-  tags = merge(
-    { "Name" = var.name },
-    var.tags
-  )
+  tags = var.tags
 }
 
 resource "aws_s3_bucket_ownership_controls" "main" {
@@ -50,27 +47,6 @@ resource "aws_s3_bucket_policy" "main" {
   policy = data.aws_iam_policy_document.deny.json
 }
 
-# access policies that will be exported
-data "aws_iam_policy_document" "bucket_read" {
-  statement {
-    effect = "Allow"
-
-    actions = ["s3:ListObjects", "s3:GetObject"]
-
-    resources = [aws_s3_bucket.main.arn, "${aws_s3_bucket.main.arn}/*"]
-  }
-}
-
-data "aws_iam_policy_document" "bucket_write" {
-  statement {
-    effect = "Allow"
-
-    actions = ["s3:PutObject"]
-
-    resources = [aws_s3_bucket.main.arn, "${aws_s3_bucket.main.arn}/*"]
-  }
-}
-
 ################################
 # SNS                          #
 ################################
@@ -103,10 +79,7 @@ resource "aws_sns_topic" "main" {
   name   = "${var.identifier}-sqs-fanout"
   policy = data.aws_iam_policy_document.topic[0].json
 
-  tags = merge(
-    { "Name" = var.name },
-    var.tags
-  )
+  tags = var.tags
 }
 
 data "aws_iam_policy_document" "fanout" {
@@ -172,10 +145,7 @@ resource "aws_sqs_queue" "deadletter" {
   count = length(var.queues)
   name  = "${try(var.queues[count.index]["identifier"], "")}-deadletter"
 
-  tags = merge(
-    { "Name" = var.name },
-    var.tags
-  )
+  tags = var.tags
 }
 
 resource "aws_sqs_queue" "main" {
@@ -190,10 +160,7 @@ resource "aws_sqs_queue" "main" {
     maxReceiveCount     = try(var.queues["max_receive_count"], 4)
   })
 
-  tags = merge(
-    { "Name" = var.name },
-    var.tags
-  )
+  tags = var.tags
 }
 
 resource "aws_sqs_queue_redrive_allow_policy" "main" {
@@ -213,18 +180,5 @@ resource "aws_s3_bucket_notification" "queue" {
   queue {
     queue_arn = aws_sqs_queue.main[0].arn
     events    = ["s3:ObjectCreated:*"]
-  }
-}
-
-# access policies that will be exported
-data "aws_iam_policy_document" "sqs_subscribe" {
-  count = length(var.queues)
-
-  statement {
-    effect = "Allow"
-
-    actions = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttribute"]
-
-    resources = [aws_sqs_queue.main[count.index].arn]
   }
 }

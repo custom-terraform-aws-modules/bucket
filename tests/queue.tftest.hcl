@@ -101,11 +101,6 @@ run "no_queue" {
   }
 
   assert {
-    condition     = length(data.aws_iam_policy_document.sqs_subscribe) == 0
-    error_message = "SQS subscibtion IAM policy was created unexpectedly"
-  }
-
-  assert {
     condition     = length(data.aws_iam_policy_document.fanout) == 0
     error_message = "SNS fanout IAM policy was created unexpectedly"
   }
@@ -159,11 +154,6 @@ run "single_queue" {
   assert {
     condition     = length(aws_s3_bucket_notification.topic) == 0
     error_message = "SNS bucket notification was created unexpectedly"
-  }
-
-  assert {
-    condition     = length(data.aws_iam_policy_document.sqs_subscribe) == 1
-    error_message = "SQS subscibtion IAM policy was not created"
   }
 
   assert {
@@ -232,11 +222,6 @@ run "multiple_queues" {
   assert {
     condition     = length(aws_s3_bucket_notification.topic) == 1
     error_message = "SNS bucket notification was not created"
-  }
-
-  assert {
-    condition     = length(data.aws_iam_policy_document.sqs_subscribe) == length(var.queues)
-    error_message = "SQS subscibtion IAM policies were not created"
   }
 
   assert {
