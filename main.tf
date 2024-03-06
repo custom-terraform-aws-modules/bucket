@@ -32,21 +32,6 @@ resource "aws_s3_bucket_public_access_block" "main" {
   restrict_public_buckets = false
 }
 
-data "aws_iam_policy_document" "deny" {
-  statement {
-    effect = "Deny"
-
-    actions = ["s3:*"]
-
-    resources = [aws_s3_bucket.main.arn, "${aws_s3_bucket.main.arn}/*"]
-  }
-}
-
-resource "aws_s3_bucket_policy" "main" {
-  bucket = aws_s3_bucket.main.id
-  policy = data.aws_iam_policy_document.deny.json
-}
-
 ################################
 # SNS                          #
 ################################
