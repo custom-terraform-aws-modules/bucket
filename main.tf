@@ -3,7 +3,7 @@
 ################################
 
 resource "random_string" "suffix" {
-  length  = 63 - length(var.identifier)
+  length  = 63 - length(var.identifier) - 1
   special = false
   upper   = false
 }
