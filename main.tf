@@ -73,9 +73,10 @@ data "aws_iam_policy_document" "fanout" {
   statement {
     effect = "Allow"
 
+    # this can not be sns.amazonaws.com specific
     principals {
-      type        = "Service"
-      identifiers = ["sns.amazonaws.com"]
+      type        = "*"
+      identifiers = ["*"]
     }
 
     actions   = ["sqs:SendMessage"]
@@ -109,9 +110,10 @@ data "aws_iam_policy_document" "queue" {
   statement {
     effect = "Allow"
 
+    # this can not be sqs.amazonaws.com specific
     principals {
-      type        = "Service"
-      identifiers = ["sqs.amazonaws.com"]
+      type        = "*"
+      identifiers = ["*"]
     }
 
     actions = ["sqs:SendMessage"]
