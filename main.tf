@@ -80,7 +80,7 @@ data "aws_iam_policy_document" "fanout" {
     }
 
     actions   = ["sqs:SendMessage"]
-    resources = ["arn:aws:sqs:*:*:${try(var.queues[count.index]["identifier"], "")}"]
+    resources = ["arn:aws:sqs:*:*:${try(var.queues[count.index]["identifier"], null)}"]
 
     condition {
       test     = "ArnEquals"
@@ -118,7 +118,7 @@ data "aws_iam_policy_document" "queue" {
 
     actions = ["sqs:SendMessage"]
 
-    resources = ["arn:aws:sqs:*:*:${try(var.queues[0]["identifier"], "")}"]
+    resources = ["arn:aws:sqs:*:*:${try(var.queues[0]["identifier"], null)}"]
 
     condition {
       test     = "ArnEquals"
@@ -130,21 +130,21 @@ data "aws_iam_policy_document" "queue" {
 
 resource "aws_sqs_queue" "deadletter" {
   count = length(var.queues)
-  name  = "${try(var.queues[count.index]["identifier"], "")}-deadletter"
+  name  = "${try(var.queues[count.index]["identifier"], null)}-deadletter"
 
   tags = var.tags
 }
 
 resource "aws_sqs_queue" "main" {
   count                      = length(var.queues)
-  name                       = try(var.queues[count.index]["identifier"], "")
-  message_retention_seconds  = try(var.queues["message_retention_seconds"], 345600)
-  visibility_timeout_seconds = try(var.queues["visibility_timeout_seconds"], 300)
+  name                       = try(var.queues[count.index]["identifier"], null)
+  message_retention_seconds  = try(var.queues[count.index]["message_retention_seconds"], null)
+  visibility_timeout_seconds = try(var.queues[count.index]["visibility_timeout_seconds"], null)
   policy                     = length(var.queues) > 1 ? data.aws_iam_policy_document.fanout[count.index].json : data.aws_iam_policy_document.queue[0].json
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.deadletter[count.index].arn
-    maxReceiveCount     = try(var.queues["max_receive_count"], 4)
+    maxReceiveCount     = try(var.queues[count.index]["max_receive_count"], null)
   })
 
   tags = var.tags
