@@ -106,7 +106,7 @@ run "no_queue" {
   }
 
   assert {
-    condition     = length(aws_sns_topic.main) == 0
+    condition     = length(aws_sns_topic.fanout) == 0
     error_message = "SNS topic was created unexpectedly"
   }
 
@@ -162,7 +162,7 @@ run "single_queue" {
   }
 
   assert {
-    condition     = length(aws_sns_topic.main) == 0
+    condition     = length(aws_sns_topic.fanout) == 0
     error_message = "SNS topic was created unexpectedly"
   }
 
@@ -230,7 +230,7 @@ run "multiple_queues" {
   }
 
   assert {
-    condition     = length(aws_sns_topic.main) == 1
+    condition     = length(aws_sns_topic.fanout) == 1
     error_message = "SNS topic was not created"
   }
 

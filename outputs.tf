@@ -1,11 +1,19 @@
 output "id" {
   description = "The ID of the S3 bucket."
-  value       = try(aws_s3_bucket.main.id, null)
+  value       = "${var.identifier}-${random_string.suffix.result}"
 }
 
 output "arn" {
   description = "The ARN of the S3 bucket."
-  value       = try(aws_s3_bucket.main.arn, null)
+  value = var.storage_class == "DEFAULT" ? try(aws_s3_bucket.main[0].arn, null) : (
+  try(aws_glacier_vault.main[0].arn, null))
+}
+
+output "uri" {
+  description = "The URI of the S3 bucket."
+  value = var.storage_class == "DEFAULT" ? (
+    try(aws_s3_bucket.main[0].bucket_regional_domain_name, null)) : (
+  try(aws_glacier_vault.main[0].location, null))
 }
 
 output "queues" {

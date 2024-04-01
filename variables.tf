@@ -13,6 +13,16 @@ variable "force_destroy" {
   default     = true
 }
 
+variable "storage_class" {
+  description = "Storage class of the S3 bucket. For example 'GLACIER' for a deep archive bucket."
+  type        = string
+  default     = "DEFAULT"
+  validation {
+    condition     = var.storage_class == "DEFAULT" || var.storage_class == "GLACIER"
+    error_message = "Storage class must be either 'DEFAULT' or 'GLACIER'"
+  }
+}
+
 variable "queues" {
   description = "A list of object to define SQS queues."
   type = list(object({

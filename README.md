@@ -22,12 +22,13 @@ This module provides a S3 bucket and multiple SQS queus which receive an event, 
 
 ## Inputs
 
-| Name          | Description                                                                                           | Type           | Default | Required |
-| ------------- | ----------------------------------------------------------------------------------------------------- | -------------- | ------- | :------: |
-| identifier    | Unique identifier to differentiate global resources.                                                  | `string`       | n/a     |   yes    |
-| force_destroy | A flag for wether or not being able to destroy a non empty bucket.                                    | `bool`         | true    |    no    |
-| queues        | A list of object to define SQS queues.                                                                | `list(object)` | []      |    no    |
-| tags          | A map of tags to add to all resources. Name is always set as tag and the other tags will be appended. | `map(string)`  | {}      |    no    |
+| Name          | Description                                                                                           | Type           | Default   | Required |
+| ------------- | ----------------------------------------------------------------------------------------------------- | -------------- | --------- | :------: |
+| identifier    | Unique identifier to differentiate global resources.                                                  | `string`       | n/a       |   yes    |
+| force_destroy | A flag for wether or not being able to destroy a non empty bucket.                                    | `bool`         | true      |    no    |
+| storage_class | Storage class of the S3 bucket. For example 'GLACIER' for a deep archive bucket.                      | `string`       | "DEFAULT" |    no    |
+| queues        | A list of object to define SQS queues.                                                                | `list(object)` | []        |    no    |
+| tags          | A map of tags to add to all resources. Name is always set as tag and the other tags will be appended. | `map(string)`  | {}        |    no    |
 
 ### `queues`
 
@@ -44,6 +45,7 @@ This module provides a S3 bucket and multiple SQS queus which receive an event, 
 | ------ | ---------------------------------------------------- |
 | id     | The ID of the S3 bucket.                             |
 | arn    | The ARN of the S3 bucket.                            |
+| uri    | The URI of the S3 bucket.                            |
 | queues | List of objects with data of the created SQS queues. |
 
 ### `queues`
@@ -61,6 +63,8 @@ module "bucket" {
 
   identifier    = "example-bucket-dev"
   force_destroy = true
+  storage_class = "DEFAULT"
+
   queues = [
     {
       identifier                 = "example-bucket-queue-one-dev"
