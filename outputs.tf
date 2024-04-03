@@ -18,8 +18,10 @@ output "uri" {
 
 output "queues" {
   description = "List of objects of each created queue."
-  value = [for index, value in try(var.queues, []) : {
-    url = aws_sqs_queue.main[index].url
-    arn = aws_sqs_queue.main[index].arn
+  value = [for index, value in var.queues : {
+    queue_arn      = aws_sqs_queue.main[index].arn
+    queue_url      = aws_sqs_queue.main[index].url
+    deadletter_arn = local.deadletter_output[index]["arn"]
+    deadletter_url = local.deadletter_output[index]["url"]
   }]
 }

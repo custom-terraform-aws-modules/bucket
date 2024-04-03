@@ -27,9 +27,9 @@ variable "queues" {
   description = "A list of object to define SQS queues."
   type = list(object({
     identifier                 = string
-    message_retention_seconds  = number
-    visibility_timeout_seconds = number
-    max_receive_count          = number
+    message_retention_seconds  = optional(number, 345600)
+    visibility_timeout_seconds = optional(number, 300)
+    max_receive_count          = optional(number, 0)
   }))
   default = []
   validation {

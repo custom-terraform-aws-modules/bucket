@@ -239,3 +239,175 @@ run "multiple_queues" {
     error_message = "S3 to SNS IAM policy was not created"
   }
 }
+
+run "queue_without_deadletter" {
+  command = plan
+
+  variables {
+    identifier = "test-bucket"
+    queues = [
+      {
+        identifier                 = "test-queue-one"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 0
+      }
+    ]
+  }
+
+  assert {
+    condition     = length(aws_sqs_queue.main) == 1
+    error_message = "Main SQS queue was not created"
+  }
+
+  assert {
+    condition     = length(aws_sqs_queue.deadletter) == 0
+    error_message = "Deadletter SQS queue was created unexpectedly"
+  }
+
+  assert {
+    condition     = length(local.deadletter_queues) == 0
+    error_message = "Deadletter index list has an unexpected length"
+  }
+
+  assert {
+    condition     = length(local.deadletter_output) == 1
+    error_message = "Deadletter output list has an unexpected length"
+  }
+
+  assert {
+    condition = local.deadletter_output[0]["arn"] == null && (
+    local.deadletter_output[0]["url"] == null)
+    error_message = "Deadletter output at index '0' is not null"
+  }
+}
+
+run "multiple_queues_single_deadletter" {
+  command = plan
+
+  variables {
+    identifier = "test-bucket"
+    queues = [
+      {
+        identifier                 = "test-queue-one"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 0
+      },
+      {
+        identifier                 = "test-queue-two"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 0
+      },
+      {
+        identifier                 = "test-queue-three"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 4
+      },
+      {
+        identifier                 = "test-queue-four"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 0
+      }
+    ]
+  }
+
+  assert {
+    condition     = length(aws_sqs_queue.main) == length(var.queues)
+    error_message = "SQS queues were not created"
+  }
+
+  assert {
+    condition     = length(aws_sqs_queue.deadletter) == 1
+    error_message = "Unexpected amount of deadletter SQS queues were created"
+  }
+
+  assert {
+    condition     = length(local.deadletter_queues) == 1
+    error_message = "Deadletter index list has an unexpected length"
+  }
+
+  assert {
+    condition     = length(local.deadletter_output) == length(var.queues)
+    error_message = "Deadletter output list has an unexpected length"
+  }
+
+  assert {
+    condition     = [for i, v in local.deadletter_output : v["queue_index"]] == [null, null, 0, null]
+    error_message = "Unexpected deadletter output"
+  }
+}
+
+run "multiple_queues_multiple_deadletter" {
+  command = plan
+
+  variables {
+    identifier = "test-bucket"
+    queues = [
+      {
+        identifier                 = "test-queue-one"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 0
+      },
+      {
+        identifier                 = "test-queue-two"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 0
+      },
+      {
+        identifier                 = "test-queue-three"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 4
+      },
+      {
+        identifier                 = "test-queue-four"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 4
+      },
+      {
+        identifier                 = "test-queue-five"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 0
+      },
+      {
+        identifier                 = "test-queue-six"
+        message_retention_seconds  = 345600
+        visibility_timeout_seconds = 300
+        max_receive_count          = 4
+      }
+    ]
+  }
+
+  assert {
+    condition     = length(aws_sqs_queue.main) == length(var.queues)
+    error_message = "SQS queues were not created"
+  }
+
+  assert {
+    condition     = length(aws_sqs_queue.deadletter) == 3
+    error_message = "Unexpected amount of deadletter SQS queues were created"
+  }
+
+  assert {
+    condition     = length(local.deadletter_queues) == 3
+    error_message = "Deadletter index list has an unexpected length"
+  }
+
+  assert {
+    condition     = length(local.deadletter_output) == length(var.queues)
+    error_message = "Deadletter output list has an unexpected length"
+  }
+
+  assert {
+    condition     = [for i, v in local.deadletter_output : v["queue_index"]] == [null, null, 0, 1, null, 2]
+    error_message = "Unexpected deadletter output"
+  }
+}

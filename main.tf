@@ -107,7 +107,7 @@ data "aws_iam_policy_document" "fanout" {
     }
 
     actions   = ["sqs:SendMessage"]
-    resources = ["arn:aws:sqs:*:*:${try(var.queues[count.index]["identifier"], null)}"]
+    resources = ["arn:aws:sqs:*:*:${var.queues[count.index]["identifier"]}"]
 
     condition {
       test     = "ArnEquals"
@@ -145,7 +145,7 @@ data "aws_iam_policy_document" "queue" {
 
     actions = ["sqs:SendMessage"]
 
-    resources = ["arn:aws:sqs:*:*:${try(var.queues[0]["identifier"], null)}"]
+    resources = ["arn:aws:sqs:*:*:${var.queues[0]["identifier"]}"]
 
     condition {
       test     = "ArnEquals"
@@ -155,35 +155,49 @@ data "aws_iam_policy_document" "queue" {
   }
 }
 
+# save indices of queues which have a related deadletter queue to later connect them
+locals {
+  deadletter_queues = [for i, v in var.queues : i if v["max_receive_count"] > 0]
+}
+
 resource "aws_sqs_queue" "deadletter" {
-  count = length(var.queues)
-  name  = "${try(var.queues[count.index]["identifier"], null)}-deadletter"
+  count = length(local.deadletter_queues)
+  name  = "${var.queues[local.deadletter_queues[count.index]]["identifier"]}-deadletter"
 
   tags = var.tags
 }
 
+locals {
+  deadletter_output = [for i, v in var.queues : {
+    arn         = try(aws_sqs_queue.deadletter[index(local.deadletter_queues, i)].arn, null)
+    url         = try(aws_sqs_queue.deadletter[index(local.deadletter_queues, i)].url, null)
+    queue_index = try(index(local.deadletter_queues, i), null)
+  }]
+}
+
 resource "aws_sqs_queue" "main" {
   count                      = length(var.queues)
-  name                       = try(var.queues[count.index]["identifier"], null)
-  message_retention_seconds  = try(var.queues[count.index]["message_retention_seconds"], null)
-  visibility_timeout_seconds = try(var.queues[count.index]["visibility_timeout_seconds"], null)
-  policy                     = length(var.queues) > 1 ? data.aws_iam_policy_document.fanout[count.index].json : data.aws_iam_policy_document.queue[0].json
+  name                       = var.queues[count.index]["identifier"]
+  message_retention_seconds  = var.queues[count.index]["message_retention_seconds"]
+  visibility_timeout_seconds = var.queues[count.index]["visibility_timeout_seconds"]
+  policy = length(var.queues) > 1 ? (
+  data.aws_iam_policy_document.fanout[count.index].json) : data.aws_iam_policy_document.queue[0].json
 
-  redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.deadletter[count.index].arn
-    maxReceiveCount     = try(var.queues[count.index]["max_receive_count"], null)
-  })
+  redrive_policy = var.queues[count.index]["max_receive_count"] > 0 ? jsonencode({
+    deadLetterTargetArn = local.deadletter_output[count.index]["arn"]
+    maxReceiveCount     = var.queues[count.index]["max_receive_count"]
+  }) : null
 
   tags = var.tags
 }
 
 resource "aws_sqs_queue_redrive_allow_policy" "main" {
-  count     = length(var.queues)
+  count     = length(local.deadletter_queues)
   queue_url = aws_sqs_queue.deadletter[count.index].id
 
   redrive_allow_policy = jsonencode({
     redrivePermission = "byQueue",
-    sourceQueueArns   = [aws_sqs_queue.main[count.index].arn]
+    sourceQueueArns   = [aws_sqs_queue.main[local.deadletter_queues[count.index]].arn]
   })
 }
 

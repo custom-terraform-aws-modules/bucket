@@ -32,12 +32,12 @@ This module provides a S3 bucket and multiple SQS queus which receive an event, 
 
 ### `queues`
 
-| Name                       | Description                                                                                                                | Type     | Default | Required |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------- | ------- | :------: |
-| identifier                 | Unique identifier to differentiate global resources.                                                                       | `string` | n/a     |   yes    |
-| message_retention_seconds  | The number of seconds Amazon SQS retains a message. Integer representing seconds, from 60 (1 minute) to 1209600 (14 days). | `number` | n/a     |   yes    |
-| visibility_timeout_seconds | The visibility timeout for messages in the queue. An integer from 0 to 43200 (12 hours).                                   | `number` | n/a     |   yes    |
-| max_receive_count          | Specifies how many times the same message can be received before moved into the deadletter queue.                          | `number` | n/a     |   yes    |
+| Name                       | Description                                                                                                                                                                                 | Type     | Default | Required |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- | :------: |
+| identifier                 | Unique identifier to differentiate global resources.                                                                                                                                        | `string` | n/a     |   yes    |
+| message_retention_seconds  | The number of seconds Amazon SQS retains a message. Integer representing seconds, from 60 (1 minute) to 1209600 (14 days).                                                                  | `number` | 345600  |    no    |
+| visibility_timeout_seconds | The visibility timeout for messages in the queue. An integer from 0 to 43200 (12 hours).                                                                                                    | `number` | 300     |    no    |
+| max_receive_count          | Specifies how many times the same message can be received before moved into the deadletter queue. Value '0' does not create a deadletter for the queue and the queue will retry infinitely. | `number` | 0       |    no    |
 
 ## Outputs
 
@@ -50,10 +50,13 @@ This module provides a S3 bucket and multiple SQS queus which receive an event, 
 
 ### `queues`
 
-| Name | Description               |
-| ---- | ------------------------- |
-| url  | The URL of the SQS queue. |
-| arn  | The ARN of the SQS queue. |
+| Name            | Description                                            |
+| --------------- | ------------------------------------------------------ |
+| queue_arn       | The ARN of the SQS queue.                              |
+| queue_url       | The URL of the SQS queue.                              |
+| deadletter_arn  | The ARN of the deadletter SQS queue of the main queue. |
+| deadletter_url  | The URL of the deadletter SQS queue of the main queue. |
+
 
 ## Example
 
@@ -76,7 +79,7 @@ module "bucket" {
       identifier                 = "example-bucket-queue-two-dev"
       message_retention_seconds  = 345600
       visibility_timeout_seconds = 300
-      max_receive_count          = 4
+      max_receive_count          = 0
     }
   ]
 
